@@ -11,6 +11,10 @@ on:
     # Europe/Kaliningrad is UTC+2; refresh three hours before the Monday digest.
     - cron: "0 4 * * 1"
 
+concurrency:
+  group: refresh-active-catalog-index
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -20,6 +24,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Sync latest catalog before processing
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
 
       - name: Set up Python
         uses: actions/setup-python@v5
