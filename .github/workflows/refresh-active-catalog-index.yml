@@ -6,6 +6,7 @@ on:
     paths:
       - reference/foroffice_models/active_catalog.csv
       - scripts/build_active_catalog_index.py
+      - tests/**
       - .github/workflows/refresh-active-catalog-index.yml
   schedule:
     # Europe/Kaliningrad is UTC+2; refresh three hours before the Monday digest.
