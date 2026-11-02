@@ -9,7 +9,7 @@ from scripts.build_active_catalog_index import build_index
 
 
 class BuildActiveCatalogIndexTests(unittest.TestCase):
-    def test_indexes_only_active_product_rows_and_keeps_category_mapping(self):
+    def test_exports_only_active_product_rows_and_minimal_fields(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = root / "catalog.csv"
@@ -17,16 +17,16 @@ class BuildActiveCatalogIndexTests(unittest.TestCase):
             with source.open("w", encoding="utf-8-sig", newline="") as stream:
                 writer = csv.DictWriter(
                     stream,
-                    fieldnames=["Тип записи", "Активность", "Тип товара", "Название"],
+                    fieldnames=["Тип записи", "Тип товара", "Название", "Активность", "Сорт.", "ID", "SALES_NOTES (SALES_NOTES)"],
                     delimiter=";",
                 )
                 writer.writeheader()
                 writer.writerows(
                     [
-                        {"Тип записи": "Товар", "Активность": "Да", "Тип товара": "Плоттеры", "Название": "Plotter A"},
-                        {"Тип записи": "Товар", "Активность": "Нет", "Тип товара": "Плоттеры", "Название": "Plotter B"},
-                        {"Тип записи": "Раздел", "Активность": "Да", "Тип товара": "МФУ", "Название": "MFP category"},
-                        {"Тип записи": "Товар", "Активность": "Да", "Тип товара": "МФУ", "Название": "MFP C"},
+                        {"Тип записи": "Товар", "Тип товара": "простой", "Название": "Plotter A", "Активность": "Да", "Сорт.": "1", "ID": "101", "SALES_NOTES (SALES_NOTES)": "internal note"},
+                        {"Тип записи": "Товар", "Тип товара": "простой", "Название": "Plotter B", "Активность": "Нет", "Сорт.": "2", "ID": "102", "SALES_NOTES (SALES_NOTES)": "internal note"},
+                        {"Тип записи": "Раздел", "Тип товара": "", "Название": "MFP category", "Активность": "Да", "Сорт.": "0", "ID": "200", "SALES_NOTES (SALES_NOTES)": "internal note"},
+                        {"Тип записи": "Товар", "Тип товара": "простой", "Название": "MFP C", "Активность": "Да", "Сорт.": "3", "ID": "103", "SALES_NOTES (SALES_NOTES)": "internal note"},
                     ]
                 )
 
@@ -38,23 +38,23 @@ class BuildActiveCatalogIndexTests(unittest.TestCase):
                 b"blob " + str(len(raw_source)).encode("ascii") + b"\0" + raw_source
             ).hexdigest()
             self.assertEqual(manifest["source_git_blob_sha"], expected_blob_sha)
-            self.assertEqual({item["category"] for item in manifest["categories"]}, {"Плоттеры", "МФУ"})
             indexed_rows = []
-            for item in manifest["categories"]:
-                for shard in item["files"]:
-                    with (output / shard["file"]).open(encoding="utf-8-sig", newline="") as stream:
-                        indexed_rows.extend(csv.DictReader(stream, delimiter=";"))
+            for shard in manifest["shards"]:
+                with (output / shard["file"]).open(encoding="utf-8-sig", newline="") as stream:
+                    indexed_rows.extend(csv.DictReader(stream, delimiter=";"))
             self.assertEqual({row["Название"] for row in indexed_rows}, {"Plotter A", "MFP C"})
             self.assertTrue(all(row["Тип записи"] == "Товар" and row["Активность"] == "Да" for row in indexed_rows))
+            self.assertTrue(all(set(row) == {"Тип записи", "Название", "Активность", "ID"} for row in indexed_rows))
+            self.assertNotIn("SALES_NOTES (SALES_NOTES)", indexed_rows[0])
             self.assertEqual(json.loads((output / "manifest.json").read_text(encoding="utf-8")), manifest)
 
     def test_fails_closed_if_required_status_columns_are_missing(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = root / "catalog.csv"
-            source.write_text("Тип товара,Название\nПлоттеры,Plotter A\n", encoding="utf-8")
+            source.write_text("Тип записи,Активность,Название\nТовар,Да,Plotter A\n", encoding="utf-8")
 
-            with self.assertRaisesRegex(ValueError, "Тип записи.*Активность"):
+            with self.assertRaisesRegex(ValueError, "ID"):
                 build_index(source, root / "generated")
 
             self.assertFalse((root / "generated" / "manifest.json").exists())
@@ -64,8 +64,8 @@ class BuildActiveCatalogIndexTests(unittest.TestCase):
             root = Path(temp)
             source = root / "catalog.csv"
             source.write_text(
-                "Тип записи;Активность;Категория;Название\n"
-                "Товар;Нет;Плоттеры;Inactive model\n",
+                "Тип записи;Активность;Название;ID\n"
+                "Товар;Нет;Inactive model;1\n",
                 encoding="utf-8",
             )
 
