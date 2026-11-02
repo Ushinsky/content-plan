@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 import tempfile
 import unittest
@@ -32,6 +33,11 @@ class BuildActiveCatalogIndexTests(unittest.TestCase):
             manifest = build_index(source, output)
 
             self.assertEqual(manifest["active_product_count"], 2)
+            raw_source = source.read_bytes()
+            expected_blob_sha = hashlib.sha1(
+                b"blob " + str(len(raw_source)).encode("ascii") + b"\0" + raw_source
+            ).hexdigest()
+            self.assertEqual(manifest["source_git_blob_sha"], expected_blob_sha)
             self.assertEqual({item["category"] for item in manifest["categories"]}, {"Плоттеры", "МФУ"})
             indexed_rows = []
             for item in manifest["categories"]:
