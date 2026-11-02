@@ -10,14 +10,14 @@ import io
 import json
 import re
 import shutil
-from collections import defaultdict
 from pathlib import Path
 
 
 HEADER_ALIASES = {
     "record_type": ("Тип записи",),
     "activity": ("Активность",),
-    "category": ("Тип товара", "Категория", "Категория товара", "Раздел каталога", "Название раздела", "Раздел"),
+    "name": ("Название", "Наименование", "Название товара", "Наименование товара"),
+    "id": ("ID",),
 }
 MAX_SHARD_BYTES = 250_000
 
@@ -37,14 +37,18 @@ def _resolve_headers(headers: list[str]) -> dict[str, str]:
                 break
     missing = [field for field in HEADER_ALIASES if field not in resolved]
     if missing:
-        required = "Тип записи и Активность"
-        if "category" in missing:
-            required += ", а также столбец категории/раздела"
+        labels = {
+            "record_type": "Тип записи",
+            "activity": "Активность",
+            "name": "Название",
+            "id": "ID",
+        }
+        required = ", ".join(labels[field] for field in missing)
         raise ValueError(f"Не найдены обязательные поля: {required}. Заголовки CSV: {headers!r}")
     return resolved
 
 
-def _read_active_products(source: Path) -> tuple[list[str], dict[str, list[dict[str, str]]], dict[str, str]]:
+def _read_active_products(source: Path) -> tuple[list[str], list[dict[str, str]], dict[str, str]]:
     with source.open("r", encoding="utf-8-sig", newline="") as stream:
         sample = stream.read(65_536)
         stream.seek(0)
@@ -58,7 +62,7 @@ def _read_active_products(source: Path) -> tuple[list[str], dict[str, list[dict[
             raise ValueError("CSV пустой или не содержит строки заголовков")
         headers = [header.strip() for header in reader.fieldnames]
         columns = _resolve_headers(headers)
-        grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
+        products = []
         for row in reader:
             if not row:
                 continue
@@ -66,13 +70,21 @@ def _read_active_products(source: Path) -> tuple[list[str], dict[str, list[dict[
             record_type = normalized.get(columns["record_type"], "").casefold()
             activity = normalized.get(columns["activity"], "").casefold()
             if record_type == "товар" and activity == "да":
-                category = normalized.get(columns["category"], "").strip()
-                if not category:
-                    raise ValueError("В строке активного товара отсутствует значение категории/раздела")
-                grouped[category].append(normalized)
-    if not grouped:
+                product_name = normalized.get(columns["name"], "").strip()
+                product_id = normalized.get(columns["id"], "").strip()
+                if not product_name or not product_id:
+                    raise ValueError("В строке активного товара отсутствует название или ID")
+                products.append(
+                    {
+                        columns["record_type"]: normalized[columns["record_type"]],
+                        columns["name"]: product_name,
+                        columns["activity"]: normalized[columns["activity"]],
+                        columns["id"]: product_id,
+                    }
+                )
+    if not products:
         raise ValueError("В CSV не найдено ни одной активной строки с Тип записи=Товар и Активность=Да")
-    return headers, grouped, columns
+    return headers, products, columns
 
 
 def _render_csv(headers: list[str], rows: list[dict[str, str]], delimiter: str) -> bytes:
@@ -88,48 +100,48 @@ def build_index(source: Path | str, output_dir: Path | str, max_shard_bytes: int
     output_dir = Path(output_dir)
     if max_shard_bytes < 1:
         raise ValueError("max_shard_bytes must be positive")
-    headers, grouped, columns = _read_active_products(source)
+    _, products, columns = _read_active_products(source)
+    headers = [columns["record_type"], columns["name"], columns["activity"], columns["id"]]
 
     # This output directory is generated-only; remove its previous contents before rebuilding.
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
 
-    categories = []
-    for category in sorted(grouped, key=str.casefold):
-        category_rows = grouped[category]
-        category_key = hashlib.sha1(category.encode("utf-8")).hexdigest()[:12]
-        parts: list[list[dict[str, str]]] = []
-        current: list[dict[str, str]] = []
-        for row in category_rows:
-            proposed = current + [row]
-            if current and len(_render_csv(headers, proposed, ";")) > max_shard_bytes:
-                parts.append(current)
-                current = [row]
-            else:
-                current = proposed
-        if current:
-            parts.append(current)
+    shards: list[list[dict[str, str]]] = []
+    current: list[dict[str, str]] = []
+    current_bytes = len(_render_csv(headers, [], ";"))
+    for row in products:
+        row_bytes = len(_render_csv(headers, [row], ";")) - len(_render_csv(headers, [], ";"))
+        if current and current_bytes + row_bytes > max_shard_bytes:
+            shards.append(current)
+            current = []
+            current_bytes = len(_render_csv(headers, [], ";"))
+        current.append(row)
+        current_bytes += row_bytes
+    if current:
+        shards.append(current)
 
-        files = []
-        for part_number, rows in enumerate(parts, start=1):
-            filename = f"category-{category_key}-part-{part_number:03d}.csv"
-            payload = _render_csv(headers, rows, ";")
-            (output_dir / filename).write_bytes(payload)
-            files.append({"file": filename, "rows": len(rows), "bytes": len(payload)})
-        categories.append({"category": category, "rows": len(category_rows), "files": files})
+    shard_manifest = []
+    for part_number, rows in enumerate(shards, start=1):
+        filename = f"active-products-part-{part_number:03d}.csv"
+        payload = _render_csv(headers, rows, ";")
+        (output_dir / filename).write_bytes(payload)
+        shard_manifest.append({"file": filename, "rows": len(rows), "bytes": len(payload)})
 
+    source_bytes = source.read_bytes()
     manifest = {
         "format_version": 1,
         "source": source.name,
-        "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        "source_sha256": hashlib.sha256(source_bytes).hexdigest(),
         "source_git_blob_sha": hashlib.sha1(
-            b"blob " + str(source.stat().st_size).encode("ascii") + b"\0" + source.read_bytes()
+            b"blob " + str(len(source_bytes)).encode("ascii") + b"\0" + source_bytes
         ).hexdigest(),
         "filter": {"Тип записи": "Товар", "Активность": "Да"},
         "columns": columns,
-        "active_product_count": sum(len(rows) for rows in grouped.values()),
-        "categories": categories,
+        "exported_columns": headers,
+        "active_product_count": len(products),
+        "shards": shard_manifest,
     }
     (output_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
