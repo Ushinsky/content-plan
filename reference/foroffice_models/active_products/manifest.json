@@ -10,120 +10,91 @@
   "columns": {
     "record_type": "Тип записи",
     "activity": "Активность",
-    "category": "Тип товара"
+    "name": "Название",
+    "id": "ID"
   },
+  "exported_columns": [
+    "Тип записи",
+    "Название",
+    "Активность",
+    "ID"
+  ],
   "active_product_count": 39496,
-  "categories": [
+  "shards": [
     {
-      "category": "простой",
-      "rows": 39496,
-      "files": [
-        {
-          "file": "category-dc82df474fb2-part-001.csv",
-          "rows": 1777,
-          "bytes": 249998
-        },
-        {
-          "file": "category-dc82df474fb2-part-002.csv",
-          "rows": 1867,
-          "bytes": 249919
-        },
-        {
-          "file": "category-dc82df474fb2-part-003.csv",
-          "rows": 1721,
-          "bytes": 249864
-        },
-        {
-          "file": "category-dc82df474fb2-part-004.csv",
-          "rows": 1979,
-          "bytes": 249974
-        },
-        {
-          "file": "category-dc82df474fb2-part-005.csv",
-          "rows": 1886,
-          "bytes": 249907
-        },
-        {
-          "file": "category-dc82df474fb2-part-006.csv",
-          "rows": 2165,
-          "bytes": 249933
-        },
-        {
-          "file": "category-dc82df474fb2-part-007.csv",
-          "rows": 2136,
-          "bytes": 249895
-        },
-        {
-          "file": "category-dc82df474fb2-part-008.csv",
-          "rows": 1684,
-          "bytes": 249874
-        },
-        {
-          "file": "category-dc82df474fb2-part-009.csv",
-          "rows": 1983,
-          "bytes": 249943
-        },
-        {
-          "file": "category-dc82df474fb2-part-010.csv",
-          "rows": 2051,
-          "bytes": 250000
-        },
-        {
-          "file": "category-dc82df474fb2-part-011.csv",
-          "rows": 2077,
-          "bytes": 249946
-        },
-        {
-          "file": "category-dc82df474fb2-part-012.csv",
-          "rows": 2052,
-          "bytes": 249887
-        },
-        {
-          "file": "category-dc82df474fb2-part-013.csv",
-          "rows": 1910,
-          "bytes": 249923
-        },
-        {
-          "file": "category-dc82df474fb2-part-014.csv",
-          "rows": 2090,
-          "bytes": 249859
-        },
-        {
-          "file": "category-dc82df474fb2-part-015.csv",
-          "rows": 1994,
-          "bytes": 249983
-        },
-        {
-          "file": "category-dc82df474fb2-part-016.csv",
-          "rows": 1851,
-          "bytes": 249997
-        },
-        {
-          "file": "category-dc82df474fb2-part-017.csv",
-          "rows": 1902,
-          "bytes": 249947
-        },
-        {
-          "file": "category-dc82df474fb2-part-018.csv",
-          "rows": 1913,
-          "bytes": 249973
-        },
-        {
-          "file": "category-dc82df474fb2-part-019.csv",
-          "rows": 1992,
-          "bytes": 249909
-        },
-        {
-          "file": "category-dc82df474fb2-part-020.csv",
-          "rows": 2072,
-          "bytes": 249908
-        },
-        {
-          "file": "category-dc82df474fb2-part-021.csv",
-          "rows": 394,
-          "bytes": 44148
-        }
-      ]
+      "file": "active-products-part-001.csv",
+      "rows": 2502,
+      "bytes": 249940
+    },
+    {
+      "file": "active-products-part-002.csv",
+      "rows": 2505,
+      "bytes": 249988
+    },
+    {
+      "file": "active-products-part-003.csv",
+      "rows": 2697,
+      "bytes": 249900
+    },
+    {
+      "file": "active-products-part-004.csv",
+      "rows": 2915,
+      "bytes": 249888
+    },
+    {
+      "file": "active-products-part-005.csv",
+      "rows": 3199,
+      "bytes": 249950
+    },
+    {
+      "file": "active-products-part-006.csv",
+      "rows": 2484,
+      "bytes": 249911
+    },
+    {
+      "file": "active-products-part-007.csv",
+      "rows": 2960,
+      "bytes": 249889
+    },
+    {
+      "file": "active-products-part-008.csv",
+      "rows": 3139,
+      "bytes": 249984
+    },
+    {
+      "file": "active-products-part-009.csv",
+      "rows": 2728,
+      "bytes": 249906
+    },
+    {
+      "file": "active-products-part-010.csv",
+      "rows": 2996,
+      "bytes": 249969
+    },
+    {
+      "file": "active-products-part-011.csv",
+      "rows": 2677,
+      "bytes": 249920
+    },
+    {
+      "file": "active-products-part-012.csv",
+      "rows": 2826,
+      "bytes": 249922
+    },
+    {
+      "file": "active-products-part-013.csv",
+      "rows": 2704,
+      "bytes": 249949
+    },
+    {
+      "file": "active-products-part-014.csv",
+      "rows": 3057,
+      "bytes": 249962
+    },
+    {
+      "file": "active-products-part-015.csv",
+      "rows": 107,
+      "bytes": 8132
     }
   ]
 }
