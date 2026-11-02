@@ -1,6 +1,8 @@
 import csv
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +11,28 @@ from scripts.build_active_catalog_index import build_index
 
 
 class BuildActiveCatalogIndexTests(unittest.TestCase):
+    def test_cli_reports_shard_count(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "catalog.csv"
+            output = root / "generated"
+            source.write_text(
+                "Тип записи;Название;Активность;ID\n"
+                "Товар;Plotter A;Да;101\n",
+                encoding="utf-8",
+            )
+            script = Path(__file__).parents[1] / "scripts" / "build_active_catalog_index.py"
+
+            result = subprocess.run(
+                [sys.executable, str(script), str(source), str(output)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("1 active products across 1 shards", result.stdout)
+
     def test_exports_only_active_product_rows_and_minimal_fields(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
