@@ -16,16 +16,16 @@ class BuildActiveCatalogIndexTests(unittest.TestCase):
             with source.open("w", encoding="utf-8-sig", newline="") as stream:
                 writer = csv.DictWriter(
                     stream,
-                    fieldnames=["Тип записи", "Активность", "Категория", "Название"],
+                    fieldnames=["Тип записи", "Активность", "Тип товара", "Название"],
                     delimiter=";",
                 )
                 writer.writeheader()
                 writer.writerows(
                     [
-                        {"Тип записи": "Товар", "Активность": "Да", "Категория": "Плоттеры", "Название": "Plotter A"},
-                        {"Тип записи": "Товар", "Активность": "Нет", "Категория": "Плоттеры", "Название": "Plotter B"},
-                        {"Тип записи": "Раздел", "Активность": "Да", "Категория": "МФУ", "Название": "MFP category"},
-                        {"Тип записи": "Товар", "Активность": "Да", "Категория": "МФУ", "Название": "MFP C"},
+                        {"Тип записи": "Товар", "Активность": "Да", "Тип товара": "Плоттеры", "Название": "Plotter A"},
+                        {"Тип записи": "Товар", "Активность": "Нет", "Тип товара": "Плоттеры", "Название": "Plotter B"},
+                        {"Тип записи": "Раздел", "Активность": "Да", "Тип товара": "МФУ", "Название": "MFP category"},
+                        {"Тип записи": "Товар", "Активность": "Да", "Тип товара": "МФУ", "Название": "MFP C"},
                     ]
                 )
 
@@ -46,7 +46,7 @@ class BuildActiveCatalogIndexTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = root / "catalog.csv"
-            source.write_text("Категория,Название\nПлоттеры,Plotter A\n", encoding="utf-8")
+            source.write_text("Тип товара,Название\nПлоттеры,Plotter A\n", encoding="utf-8")
 
             with self.assertRaisesRegex(ValueError, "Тип записи.*Активность"):
                 build_index(source, root / "generated")
