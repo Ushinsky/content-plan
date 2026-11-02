@@ -123,6 +123,9 @@ def build_index(source: Path | str, output_dir: Path | str, max_shard_bytes: int
         "format_version": 1,
         "source": source.name,
         "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        "source_git_blob_sha": hashlib.sha1(
+            b"blob " + str(source.stat().st_size).encode("ascii") + b"\0" + source.read_bytes()
+        ).hexdigest(),
         "filter": {"Тип записи": "Товар", "Активность": "Да"},
         "columns": columns,
         "active_product_count": sum(len(rows) for rows in grouped.values()),
