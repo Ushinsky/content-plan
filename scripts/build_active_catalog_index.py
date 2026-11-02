@@ -158,7 +158,7 @@ def main() -> None:
     manifest = build_index(args.source, args.output_dir, args.max_shard_bytes)
     print(
         f"Indexed {manifest['active_product_count']} active products across "
-        f"{len(manifest['categories'])} categories."
+        f"{len(manifest['shards'])} shards."
     )
 
 
